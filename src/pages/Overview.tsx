@@ -17,11 +17,11 @@ export default function OverviewPage() {
 	const [popup, openPopup] = useState(false);
 	const [selectedElnt, setSelectedElnt] = useState<HTMLDivElement | undefined>(undefined);
 	const [deleteList, setDeleteList] = useState<trackInfo[]>([]);
+	const [excludedTracks, setExcludedTracks] = useState<trackInfo[]>([]);
 	const [, forceUpdate] = useReducer(x => x + 1, 0);
 
 	var enterTarget: EventTarget | null = null;
 
-	const canSelectRef = useRef(true);
 	const playlistRef = useRef('');
 
 	interface trackInfo {
@@ -131,7 +131,9 @@ export default function OverviewPage() {
 	}
 
 	async function ConfirmRemoval() {
-		let trackList = [...deleteList];
+		let trackList = deleteList
+			.filter((x) => !excludedTracks.includes(x));
+
 		while (trackList.length) {
 			let curPlaylist = trackList[0].playlist;
 			let curTrackList = trackList
@@ -155,12 +157,19 @@ export default function OverviewPage() {
 		setDedup([]);
 	}
 
+	function toggleTrackDeletion(track: trackInfo) {
+		let list = [...excludedTracks];
+
+		if (list.includes(track))
+			list = list.filter((x) => x !== track)
+		else list.push(track);
+
+		setExcludedTracks(list);
+	}
+
 	function selectPlaylistHelper(id: string) {
-		// if (canSelectRef.current) {
-			selectPlaylist(id);
-			playlistRef.current = id;
-			canSelectRef.current = false;
-		// }
+		selectPlaylist(id);
+		playlistRef.current = id;
 	}
 
 	/*Drag & Drop*/
@@ -211,6 +220,65 @@ export default function OverviewPage() {
 
 	}
 
+	/*Touch events*/
+
+	const entryTouchStartHandler = function (e: any) {
+		// e.preventDefault();
+		setSelectedElnt(e.target);
+		const clone = e.target.cloneNode(true);
+		if (clone?.style) {
+			clone.className = 'touchedEntry';
+			clone.id = 'touchedItem'
+			entryTouchMoveHandler(e)
+			document.body.appendChild(clone);
+		}
+	}
+
+	const entryTouchMoveHandler = function (e: any) {
+		const clone = document.getElementById('touchedItem');
+		if (clone?.style) {
+			const touchLocation = e.targetTouches[0];
+			clone.style.left = touchLocation.pageX + 'px';
+			clone.style.top = touchLocation.pageY + 'px';
+		}
+	}
+
+	const entryTouchEndHandler = function (e: any) {
+		const clone = document.getElementById('touchedItem');
+		if (clone) {
+			const playlistsDedup = document.getElementsByClassName('playlistsDedup')[0];
+			if (selectedElnt && playlistsDedup) {
+				const touchLocation = e.changedTouches[0];
+				const rect = playlistsDedup.getBoundingClientRect();
+				const x = touchLocation.clientX;
+				const y = touchLocation.clientY;
+				if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+					const selectedPl = playlists.find((x) => x.id === selectedElnt.dataset.playlist);
+					if (selectedPl) {
+						let elntHoveredIndex = dedupPlaylists.length;
+						// if (hoveredPl) {
+						// 	elntHoveredIndex = dedupPlaylists.findIndex((x) => x.id === hoveredPl);
+						// 	if (elntHoveredIndex < 0) elntHoveredIndex = dedupPlaylists.length;
+						// }
+
+						let tempDedupPlaylists = [...dedupPlaylists];
+						const elntOldIndex = dedupPlaylists.indexOf(selectedPl);
+						tempDedupPlaylists.splice(elntHoveredIndex, 0, (elntOldIndex > -1)
+							? tempDedupPlaylists.splice(elntOldIndex, 1)[0]
+							: selectedPl);
+
+						setDedup(tempDedupPlaylists);
+					}
+				}
+			}
+			document.body.removeChild(clone);
+		}
+	}
+
+	const entryTouchCancelHandler = function (e: any) {
+		const clone = document.getElementById('touchedItem');
+		if (clone) document.body.removeChild(clone);
+	}
 	/********************************************************************************************/
 
 	return (
@@ -220,7 +288,7 @@ export default function OverviewPage() {
 			{/*<h2 className="centeredText">Overview</h2>*/}
 
 			<Popup open={popup} setOpen={openPopup}>
-				<h1 style={{fontSize: "2rem"}}>Delete List</h1>
+				<h1 style={{fontSize: "2rem"}}>Delete List (click for toggle)</h1>
 				<div>
 					<button className="button dark" style={{padding: "0.5rem"}} onClick={() => ConfirmRemoval()}>
 						Remove
@@ -249,6 +317,8 @@ export default function OverviewPage() {
 						<tr
 							className="track"
 							key={x.playlist.id + x.track.id + x.index}
+							onClick={toggleTrackDeletion.bind(null, x)}
+							style={{textDecoration: excludedTracks.includes(x) ? "line-through" : ""}}
 						>
 							<td className="playlistName">{i === 0 || x.playlist !== deleteList[i - 1].playlist ? x.playlist.name : null}</td>
 							<td className="number">{x.index + 1}</td>
@@ -270,6 +340,10 @@ export default function OverviewPage() {
 				{playlists.length === 0 && "Loading ... or you don't have any playlists"}
 				{playlists.map((x) => (
 					<div onDragStart={entryDragStartHandler}
+					     onTouchStart={entryTouchStartHandler}
+					     onTouchMove={entryTouchMoveHandler}
+					     onTouchEnd={entryTouchEndHandler}
+					     onTouchCancel={entryTouchCancelHandler}
 					     draggable="true"
 					     data-playlist={x.id}
 					     key={x.id} className="entry">

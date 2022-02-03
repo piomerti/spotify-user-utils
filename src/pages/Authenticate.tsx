@@ -5,7 +5,7 @@ import "./Authenticate.scss";
 export default function AuthenticatePage() {
 	if (window.location.hash) {
 		// eslint-disable-next-line
-		var { access_token, token_type, expires_in } = Object.fromEntries(
+		const { access_token, token_type, expires_in } = Object.fromEntries(
 			new URLSearchParams(window.location.hash.slice(1)).entries()
 		);
 		if (!access_token) return <Navigate to="/"/>;
@@ -21,7 +21,7 @@ export default function AuthenticatePage() {
 		return <Navigate to="/overview"/>;
 	} else {
 		// eslint-disable-next-line
-		var { error, state } = Object.fromEntries(new URLSearchParams(window.location.search).entries());
+		const { error, state } = Object.fromEntries(new URLSearchParams(window.location.search).entries());
 
 		return (
 			<div className="page authenticate">

@@ -18,7 +18,7 @@ spotify.createAuthorizeURL = function (scopes?: ReadonlyArray<string>, state?: s
 };
 
 export async function getAllUserPlaylists() {
-	var playlists: SpotifyApi.ListOfUsersPlaylistsResponse;
+	let playlists: SpotifyApi.ListOfUsersPlaylistsResponse;
 
 	do {
 		const response = await spotify.getUserPlaylists({
@@ -35,7 +35,7 @@ export async function getAllUserPlaylists() {
 
 export function useAuth() {
 	const expires_in = localStorage.getItem("expires_in");
-	var access_token = localStorage.getItem("access_token");
+	let access_token = localStorage.getItem("access_token");
 
 	if (Date.now() < Number(expires_in) && access_token) {
 		spotify.setAccessToken(access_token);

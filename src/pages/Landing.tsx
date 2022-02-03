@@ -1,8 +1,11 @@
 import { Navigate } from "react-router";
 import spotify, { useAuth } from "../util/spotify";
 import "./Landing.scss";
+import {Popup} from "../components/Popup";
+import {useState} from "react";
 
 export default function LandingPage() {
+	const [popup, openPopup] = useState(false);
 	const access_token = useAuth();
 	//console.log({ access_token });
 	if (access_token) return <Navigate to="/overview"/>;
@@ -43,8 +46,25 @@ export default function LandingPage() {
 			</div>
 
 			<div className="bottomright">
-				v0.5
+				<a href="/" onClick={(e) => {
+					e.preventDefault();
+					openPopup(true);
+				}}> v0.5.3 </a>
 			</div>
+
+			<Popup open={popup} setOpen={openPopup}>
+				<div className="container">
+					<br />
+					<h2>⚙ Changelog ⚙</h2>
+					<ul>
+						<li>0.3 — Deduper and cleaner.</li>
+						<li>0.4 — Drag & Drop area. Updating React Components. Better UI.</li>
+						<li>0.5 — Last.fm added as tag source</li>
+						<li>0.5.3 — Basic mobile touch support. Tracks toggling. Bug fixes.
+						</li>
+					</ul>
+				</div>
+			</Popup>
 		</div>
 	);
 }
