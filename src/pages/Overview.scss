@@ -1,3 +1,4 @@
+@import "../components/Playlist.scss";
 @import "../index.scss";
 
 .page.overview {
@@ -24,11 +25,6 @@
 	.playlists {
 		margin-bottom: 1rem;
     }
-}
-
-.centeredText {
-	width: 100%;
-	text-align: center;
 }
 
 .dedupText {

@@ -49,7 +49,7 @@ export default function LandingPage() {
 				<a href="/" onClick={(e) => {
 					e.preventDefault();
 					openPopup(true);
-				}}> v0.5.3 </a>
+				}}> v0.5.5 </a>
 			</div>
 
 			<Popup open={popup} setOpen={openPopup}>
@@ -59,9 +59,9 @@ export default function LandingPage() {
 					<ul>
 						<li>0.3 — Deduper and cleaner.</li>
 						<li>0.4 — Drag & Drop area. Updating React Components. Better UI.</li>
-						<li>0.5 — Last.fm added as tag source</li>
-						<li>0.5.3 — Basic mobile touch support. Tracks toggling. Bug fixes.
-						</li>
+						<li>0.5 — Last.fm added as tag source.</li>
+						<li>0.5.3 — Basic mobile touch support. Tracks toggling. Bug fixes.</li>
+						<li>0.5.5 — Search. Various improvements. </li>
 					</ul>
 				</div>
 			</Popup>

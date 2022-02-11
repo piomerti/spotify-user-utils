@@ -1,5 +1,5 @@
 export default async function getLastFmArtistTopTags(artist: string, artistId: string, apiKey: string, delay: number = 0) {
-	const emptyResult = {id: artistId, tags: []};
+	const emptyResult = {id: artistId, tags: [null]};
 	if (!artist || !apiKey) return emptyResult;
 	// console.log('Last.FM request');
 	await timeout(delay);
@@ -32,6 +32,8 @@ export default async function getLastFmArtistTopTags(artist: string, artistId: s
 		result = result
 			.map((x: any) => x.name.toLowerCase())
 			.filter((x: any) => !x.startsWith('no ') && !x.startsWith('not '));
+
+		if (!result.length) return emptyResult;
 
 		return {id: artistId, tags: result};
 	}

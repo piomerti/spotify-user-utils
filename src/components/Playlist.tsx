@@ -62,6 +62,7 @@ export default function Playlist({
 
 	async function handleTracks(items: SpotifyApi.PlaylistTrackObject[]) {
 		// items = items.filter((x) => !!x.track.id); // filter local songs
+		let artists = artistsState;
 
 		let artistIds = items
 			.map((x) => x.track.artists.map((y) => y.id))
@@ -82,6 +83,7 @@ export default function Playlist({
 					if (x.genres?.length === 0) {
 						getLastFmArtistTopTags(x.name, x.id, process.env.REACT_APP_LASTFM_KEY, REQUEST_DELAY * reqCounter++)
 							.then(data => {
+								let artists = artistsState;
 								artists.get(data.id).genres = data.tags;
 								setArtistsState(artists);
 								setReqCompleted(x => x + 1);
@@ -99,6 +101,7 @@ export default function Playlist({
 				.flat()
 				.unique();
 		}
+		setArtistsState(artists);
 		return items;
 	}
 
@@ -114,7 +117,7 @@ export default function Playlist({
 		spotify.getPlaylist(id, {market: inCountry}).then(async ({body: state}) => {
 			state.tracks.items = await handleTracks(state.tracks.items);
 			setPlaylist(state);
-			handleTracks(state.tracks.items);
+			await handleTracks(state.tracks.items);
 
 			while (state.tracks.next) {
 				if (id !== idRef.current) return; //abort
@@ -151,15 +154,16 @@ export default function Playlist({
 		for await (let x of allTracks) {
 			if (!x.track.genres.length)
 				x.track.genres = x.track.artists
-					.map((y) => artistsState.get(y.id)?.genres || [])
+					.map((y) => artistsState.get(y.id)?.genres || null)
 					.flat()
 					.unique();
 		}
 
 		let genres = allTracks
-			.map((x) => onlyTopGenre ? x.track.genres[0] || [] : x.track.genres || [])
+			.map((x) => onlyTopGenre ? x.track.genres[0] || null : x.track.genres || null)
 			.flat()
-			.unique();
+			.unique()
+			.filter((x) => x !== null);
 
 		let textArea = document.getElementById("textareaId");
 		let keywords = textArea.value.split("\n")
@@ -190,7 +194,7 @@ export default function Playlist({
 			let songs = allTracks
 				.filter((x) => {
 					let curGenres = [...x.track.genres];
-					if (curGenres.length) {
+					if (curGenres.length && curGenres[0] !== null) {
 						if (onlyTopGenre) curGenres.length = 1;
 						for (let iter of curGenres) {
 							const words = genre.split(splitRE)
@@ -316,6 +320,19 @@ export default function Playlist({
 		refreshPlaylist();
 	}
 
+	function updateGenres(track: SpotifyApi.TrackObjectFull) {
+		track.genres = [];
+		for (let i = 0; i < track.artists.length; i++) {
+			getLastFmArtistTopTags(track.artists[i].name, track.artists[i].id, process.env.REACT_APP_LASTFM_KEY, REQUEST_DELAY * i)
+				.then(data => {
+					let artists = artistsState;
+					artists.get(data.id).genres = data.tags;
+					setArtistsState(artists);
+					forceUpdate();
+				})
+		}
+	}
+
 	function toggleGenre(genre) {
 		let list = [...excludedGenres];
 
@@ -434,6 +451,7 @@ export default function Playlist({
 					<tr>
 						<th className="number">#</th>
 						<th className="title">Song</th>
+						<th className="artist">Artists</th>
 						<th className="length">Length</th>
 						{deleteList.length && deleteList[0].original ? <th className="title">Original</th> : null}
 					</tr>
@@ -444,10 +462,17 @@ export default function Playlist({
 							className="track"
 							key={x.index.toString() + i.toString()}
 							onClick={toggleTrackDeletion.bind(null, x)}
-							style={{textDecoration: excludedTracks.includes(x) ? "line-through" : ""}}
 						>
 							<td className="number">{x.index + 1}</td>
-							<td className="title">{playlist.tracks.items[x.index].track.name}</td>
+							<td className="title" style={excludedTracks.includes(x)
+								? {textDecoration: "line-through", textDecorationThickness: "15%", color: "#B0B0B0"}
+								: {}}>
+								{playlist.tracks.items[x.index].track.name}</td>
+							<td className="artist">
+								{playlist.tracks.items[x.index].track.artists.map((y, j) =>
+									<p key={playlist.tracks.items[x.index].track.id + i.toString() + y + j.toString()}>{y.name}</p>)
+								}
+							</td>
 							<td className="length">{millisToMinutesAndSeconds(playlist.tracks.items[x.index].track.duration_ms)}</td>
 							{deleteList[0].original
 								? <td className="number">
@@ -500,11 +525,12 @@ export default function Playlist({
 				<thead className="heading">
 				<tr>
 					<td className="number">#</td>
-
 					<td className="title">Song</td>
+					<td className="artist">Artist</td>
 					<td className="genre">Genre</td>
-
 					<td className="length">Length</td>
+					<td className="additional"/>
+					<td className="additional"/>
 				</tr>
 				</thead>
 
@@ -519,6 +545,13 @@ export default function Playlist({
 						<td className="title" onClick={setPreviewUrl.bind(null, x.track.preview_url)}>
 							{x.track.name}
 						</td>
+
+						<td className="artist">
+							{x.track.artists.map((y, j) =>
+								<p key={x.track.id + i.toString() + y + j.toString()}>{y.name}</p>)
+							}
+						</td>
+
 						<td className="genre">
 							{
 								(x.track.genres.length
@@ -528,13 +561,17 @@ export default function Playlist({
 											.flat()
 											.unique()
 								)
-									.map((z, j) => (
+									.map((z, j) =>
 										<p key={x.track.id + i.toString() + z + j.toString()}>{z}</p>
-									))
+									)
 							}
 						</td>
 
 						<td className="length">{millisToMinutesAndSeconds(x.track.duration_ms)}</td>
+						<td>{x.track.genres.length
+							? <a href="/" onClick={(e) => {e.preventDefault(); updateGenres(x.track);}}
+							     style={{fontSize: "80%", textDecoration: "none"}}>GET LAST.FM TAGS</a>
+							: null}</td>
 						<td><a href={x.track.uri} style={{fontSize: "80%", textDecoration: "none"}}>PLAY ON SPOTIFY</a>
 						</td>
 					</tr>

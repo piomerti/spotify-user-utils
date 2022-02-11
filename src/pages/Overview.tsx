@@ -47,13 +47,20 @@ export default function OverviewPage() {
 
 	enum ERemovalMode {
 		Dedup,
-		Unavailable
+		Unavailable,
+		Search
 	}
 
 	async function removeTracks(mode: ERemovalMode) {
 		if (!!dedupMax) return;
+		if (mode === ERemovalMode.Search) {
+			var query = prompt("Search by track or artist")?.toLowerCase();
+			if (!query) return;
+		}
+
 		setDedupProgress(0);
-		setDedupMax(0);
+		setDedupMax(100);
+		forceUpdate();
 
 		let plstsResponse = [];
 		let max = 0;
@@ -112,11 +119,20 @@ export default function OverviewPage() {
 				//search for unavailables songs and leave only them
 				trackList = trackList.filter((x) => x.track.is_playable === false);
 				break;
+			case ERemovalMode.Search:
+				str = 'searched';
+				//search for tracks and leave only them
+				trackList = trackList.filter((x) =>
+					x.track.name.toLowerCase().includes(query)
+					|| x.track.artists.find((y: any) => y.name.toLowerCase().includes(query)));
+				break;
 			default:
 				setDedupMax(0);
 				return;
 		}
-		trackList = trackList.filter((x) => x.playlist.owner.id === user || x.playlist.collaborative);
+		if (mode !== ERemovalMode.Search) {
+			trackList = trackList.filter((x) => x.playlist.owner.id === user || x.playlist.collaborative);
+		}
 
 		setDedupProgress(max);
 		forceUpdate();
@@ -132,6 +148,7 @@ export default function OverviewPage() {
 
 	async function ConfirmRemoval() {
 		let trackList = deleteList
+			.filter((x) => x.playlist.owner.id === user || x.playlist.collaborative)
 			.filter((x) => !excludedTracks.includes(x));
 
 		while (trackList.length) {
@@ -153,7 +170,6 @@ export default function OverviewPage() {
 	}
 
 	function cleanDedupList() {
-		setDedupMax(0);
 		setDedup([]);
 	}
 
@@ -285,56 +301,69 @@ export default function OverviewPage() {
 		<div className="page overview">
 			<img width="7%" src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_White.png"
 			     alt=""/>
-			{/*<h2 className="centeredText">Overview</h2>*/}
+			<div className="playlist">
+				<Popup open={popup} setOpen={openPopup}>
+					<h1 style={{fontSize: "2rem"}}>Delete List (click for toggle)</h1>
+					<div>
+						<button className="button dark" style={{padding: "0.5rem"}} onClick={() => ConfirmRemoval()}>
+							Remove
+						</button>
+						<button className="button" style={{padding: "0.5rem", marginLeft: "20px"}}
+						        onClick={() => {
+							        setDeleteList([]);
+							        openPopup(false)
+						        }}>
+							Cancel
+						</button>
+					</div>
 
-			<Popup open={popup} setOpen={openPopup}>
-				<h1 style={{fontSize: "2rem"}}>Delete List (click for toggle)</h1>
-				<div>
-					<button className="button dark" style={{padding: "0.5rem"}} onClick={() => ConfirmRemoval()}>
-						Remove
-					</button>
-					<button className="button" style={{padding: "0.5rem", marginLeft: "20px"}}
-					        onClick={() => {
-						        setDeleteList([]);
-						        openPopup(false)
-					        }}>
-						Cancel
-					</button>
-				</div>
 
-				<table className="tracks" width={deleteList.length && deleteList[0].original ? "70%" : "60%"}>
-					<thead className="heading">
-					<tr>
-						<th className="playlistName">Playlist</th>
-						<th className="number">#</th>
-						<th className="title">Song</th>
-						<th className="length">Length</th>
-						{deleteList.length && deleteList[0].original ? <th className="original">Original</th> : null}
-					</tr>
-					</thead>
-					<tbody>
-					{deleteList.map((x, i) => (
-						<tr
-							className="track"
-							key={x.playlist.id + x.track.id + x.index}
-							onClick={toggleTrackDeletion.bind(null, x)}
-							style={{textDecoration: excludedTracks.includes(x) ? "line-through" : ""}}
-						>
-							<td className="playlistName">{i === 0 || x.playlist !== deleteList[i - 1].playlist ? x.playlist.name : null}</td>
-							<td className="number">{x.index + 1}</td>
-							<td className="title">{x.track.name}</td>
-							<td className="length">{millisToMinutesAndSeconds(x.track.duration_ms)}</td>
-							{deleteList[0].original
-								? <td className="original">
-									{x.original && (i === 0 || x.original !== deleteList[i - 1].original) ? x.original : null}
-								</td>
-								: null
-							}
+					<table className="tracks" width={deleteList.length && deleteList[0].original ? "70%" : "60%"}>
+						<thead className="heading">
+						<tr>
+							<th className="playlistName">Playlist</th>
+							<th className="number">#</th>
+							<th className="title">Song</th>
+							<th className="artist">Artist</th>
+							<th className="length">Length</th>
+							{deleteList.length && deleteList[0].original ?
+								<th className="original">Original</th> : null}
 						</tr>
-					))}
-					</tbody>
-				</table>
-			</Popup>
+						</thead>
+						<tbody>
+						{deleteList.map((x, i) => (
+							<tr
+								className="track"
+								key={x.playlist.id + x.track.id + x.index}
+								{...(x.playlist.owner.id === user || x.playlist.collaborative) && {onClick: toggleTrackDeletion.bind(null, x)}}
+								style={(x.playlist.owner.id === user || x.playlist.collaborative)
+									? {cursor: "pointer"}
+									: {color: "#B0B0B0"}}
+							>
+								<td className="playlistName">{i === 0 || x.playlist !== deleteList[i - 1].playlist ? x.playlist.name : null}</td>
+								<td className="number">{x.index + 1}</td>
+								<td className="title" style={excludedTracks.includes(x)
+									? {textDecoration: "line-through", textDecorationThickness: "15%", color: "#B0B0B0"}
+									: {}}>
+									{x.track.name}</td>
+								<td className="artist">
+									{x.track.artists.map((y:any, j:number) =>
+										<p key={x.track.id + i.toString() + y + j.toString()}>{y.name}</p>)
+									}
+								</td>
+								<td className="length">{millisToMinutesAndSeconds(x.track.duration_ms)}</td>
+								{deleteList[0].original
+									? <td className="original">
+										{x.original && (i === 0 || x.original !== deleteList[i - 1].original) ? x.original : null}
+									</td>
+									: null
+								}
+							</tr>
+						))}
+						</tbody>
+					</table>
+				</Popup>
+			</div>
 
 			<div className="playlists">
 				{playlists.length === 0 && "Loading ... or you don't have any playlists"}
@@ -386,6 +415,12 @@ export default function OverviewPage() {
 				</button>
 				<button onClick={() => removeTracks(ERemovalMode.Unavailable)} className="button light save">
 					Remove unavailable tracks
+				</button>
+				<button onClick={() => removeTracks(ERemovalMode.Search)} className="button light save">
+					Track search
+				</button>
+				<button onClick={() => setDedup(playlists)} className="button light save">
+					Add all
 				</button>
 				<button onClick={() => cleanDedupList()} className="button light save">
 					Clean list

@@ -83,49 +83,60 @@
     .heading {
       color: $grey;
       height: 42px;
-      // display: flex;
-      // flex-flow: row wrap;
-      // align-items: center;
 
       .number {
         margin-left: $margin-sm;
         font-style: italic;
+        font-size: $large;
       }
 
       .title {
         margin-left: 30px;
-        width: 45%;
+        width: 25%;
         text-transform: uppercase;
         letter-spacing: 1px;
+        font-size: $large;
       }
 
+      .artist {
+        margin-left: 30px;
+        width: 25%;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: $large;
+      }
+      
       .genre {
         margin-left: auto;
-        width: 30%;
+        width: 20%;
+        text-transform: uppercase;
         font-size: $large;
       }
       
       .length {
         margin-left: auto;
         width: 10%;
+        text-transform: uppercase;
         font-size: $large;
-      }
-
-      .popularity {
-        font-size: $large;
-        margin-left: 55px;
-        padding-right: $padding-sm;
+        text-align: center;
       }
 
       .original {
         margin-left: auto;
         font-style: italic;
+        text-transform: uppercase;
+        font-size: $large;
       }
 
       .playlistName {
         margin-left: $margin-sm;
         text-transform: uppercase;
+        font-size: $large;
         letter-spacing: 1px;
+      }
+      
+      .additional {
+        width: 10%;
       }
     }
 
@@ -155,7 +166,7 @@
 
       .number {
         margin-left: $margin-sm;
-        color: $grey;
+        color: $white;
         width: 12px;
       }
 
@@ -173,11 +184,15 @@
       }
 
       .title {
-        width: 45%;
         margin-left: $margin * 2;
         color: $white;
       }
 
+      .artist {
+        margin-left: $margin * 2;
+        color: $white;
+      }
+      
       .explicit {
         .label {
           border: 1px;
@@ -195,7 +210,6 @@
       }
 
       .genre {
-        width: 10%;
         text-overflow: ellipsis;
         white-space: nowrap;
         overflow: hidden;
@@ -203,14 +217,8 @@
 
       .length {
         margin-left: auto;
-        color: $grey;
-      }
-
-      .popularity {
-        margin-left: 46px;
-        padding-right: $padding-sm;
-        font-size: $large;
-        color: $grey;
+        color: $white;
+        text-align: center;
       }
 
       .playlistName {
@@ -233,9 +241,6 @@
         width: auto;
       }
 
-      .popularity {
-        display: none;
-      }
     }
 
     .track {
@@ -247,9 +252,6 @@
         display: none;
       }
 
-      .popularity {
-        display: none;
-      }
     }
   }
 }
