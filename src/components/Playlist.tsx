@@ -437,7 +437,7 @@ export default function Playlist({
 					<button className="button dark" style={{padding: "0.5rem"}} onClick={() => ConfirmRemoval()}>
 						Remove
 					</button>
-					<button className="button" style={{padding: "0.5rem", marginLeft: "20px"}}
+					<button className="button light" style={{padding: "0.5rem", marginLeft: "20px"}}
 					        onClick={() => {
 						        setDeleteList([]);
 						        openPopupRemove(false)

@@ -272,10 +272,6 @@ export default function OverviewPage() {
 					const selectedPl = playlists.find((x) => x.id === selectedElnt.dataset.playlist);
 					if (selectedPl) {
 						let elntHoveredIndex = dedupPlaylists.length;
-						// if (hoveredPl) {
-						// 	elntHoveredIndex = dedupPlaylists.findIndex((x) => x.id === hoveredPl);
-						// 	if (elntHoveredIndex < 0) elntHoveredIndex = dedupPlaylists.length;
-						// }
 
 						let tempDedupPlaylists = [...dedupPlaylists];
 						const elntOldIndex = dedupPlaylists.indexOf(selectedPl);
@@ -308,7 +304,7 @@ export default function OverviewPage() {
 						<button className="button dark" style={{padding: "0.5rem"}} onClick={() => ConfirmRemoval()}>
 							Remove
 						</button>
-						<button className="button" style={{padding: "0.5rem", marginLeft: "20px"}}
+						<button className="button light" style={{padding: "0.5rem", marginLeft: "20px"}}
 						        onClick={() => {
 							        setDeleteList([]);
 							        openPopup(false)

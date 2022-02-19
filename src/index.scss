@@ -145,6 +145,10 @@ button,
 		&:hover {
 			background: lighten($green, 10%);
 		}
+
+		&:active {
+			background: lighten($green, 25%);
+		}
 	}
 
 	&.light {
@@ -153,6 +157,10 @@ button,
 
 		&:hover {
 			background: $sand;
+		}
+
+		&:active {
+			background: darken($sand, 20%);
 		}
 	}
 }
