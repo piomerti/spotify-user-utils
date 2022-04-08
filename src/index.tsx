@@ -1,12 +1,12 @@
 import React from "react";
-import ReactDOM from "react-dom";
-import { Routes, Route, BrowserRouter, Navigate, useLocation } from "react-router-dom";
+import ReactDOM from "react-dom/client";
+import {Routes, Route, BrowserRouter, Navigate, useLocation} from "react-router-dom";
 import "./index.scss";
 import LandingPage from "./pages/Landing";
 import AuthenticatePage from "./pages/Authenticate";
 import OverviewPage from "./pages/Overview";
-import { useAuth } from "./util/spotify";
-import { Footer } from "./components/Footer";
+import {useAuth} from "./util/spotify";
+import {Footer} from "./components/Footer";
 
 /*
 function App() {
@@ -27,7 +27,7 @@ function App() {
 		<Routes>
 			<Route path="/" element={<LandingPage/>}/>
 			<Route path="/authenticate" element={<AuthenticatePage/>}/>
-			<Route path="/overview" element={<PrivateRoute><OverviewPage /></PrivateRoute>}/>
+			<Route path="/overview" element={<PrivateRoute><OverviewPage/></PrivateRoute>}/>
 		</Routes>
 	);
 }
@@ -56,20 +56,30 @@ function PrivateRoute({ children, ...rest }: any) {
 }
 */
 
-function PrivateRoute({ children }: { children: JSX.Element }) {
+function PrivateRoute({children}: { children: JSX.Element }) {
 	const access_token = useAuth();
 	let location = useLocation();
-	return access_token ? children : <Navigate to="/" state={{ from: location }} />;
+	return access_token ? children : <Navigate to="/" state={{from: location}}/>;
 }
 
-ReactDOM.render(
+// ReactDOM.render(
+// 	<React.StrictMode>
+// 		<BrowserRouter>
+// 			{/*<Switch>*/}
+// 				<App/>
+// 			{/*</Switch>*/}
+// 		</BrowserRouter>
+// 		<Footer />
+// 	</React.StrictMode>,
+// 	document.getElementById("root")
+// );
+
+const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
+root.render(
 	<React.StrictMode>
 		<BrowserRouter>
-			{/*<Switch>*/}
-				<App/>
-			{/*</Switch>*/}
+			<App/>
 		</BrowserRouter>
-		<Footer />
-	</React.StrictMode>,
-	document.getElementById("root")
+		<Footer/>
+	</React.StrictMode>
 );
