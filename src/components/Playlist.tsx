@@ -36,7 +36,7 @@ export default function Playlist({
 	const [excludedGenres, setExcludedGenres] = useState<string[]>([]);
 	const [onlyTopGenre, setOnlyTopGenre] = useState(false);
 	const [noDuplicates, setNoDuplicates] = useState(true);
-	const [progress, setProgress] = useState(false);
+	const [progress, setProgress] = useState(0);
 	const [previewUrl, setPreviewUrl] = useState(null);
 	const [user, setUser] = useState(null);
 	const [country, setCountry] = useState('');
@@ -428,7 +428,7 @@ export default function Playlist({
 					</button>
 				</div>
 
-				<div>{progress >= 100 ? "DONE" : progress && <progress max={100} value={progress}/>}</div>
+				<div>{progress >= 100 ? "DONE" : progress > 0 && <progress max={100} value={progress}/>}</div>
 			</Popup>
 
 			<Popup open={popupRemove} setOpen={openPopupRemove}>

@@ -14,18 +14,22 @@ export default function OverviewPage() {
 	const [country, setCountry] = useState('');
 	const [dedupMax, setDedupMax] = useState(0);
 	const [dedupProgress, setDedupProgress] = useState(0);
+	const [rndProgress, setRndProgress] = useState(0);
+	const rndProgressMax = 1.25;
 	const [popup, openPopup] = useState(false);
+	const [popupRandomPlst, openPopupRandomPlst] = useState(false);
 	const [selectedElnt, setSelectedElnt] = useState<HTMLDivElement | undefined>(undefined);
 	const [deleteList, setDeleteList] = useState<trackInfo[]>([]);
 	const [excludedTracks, setExcludedTracks] = useState<trackInfo[]>([]);
 	const [, forceUpdate] = useReducer(x => x + 1, 0);
+	const [randomPlaylistSize, setRandomPlaylistSize] = useState(1000);
 
 	var enterTarget: EventTarget | null = null;
 
 	const playlistRef = useRef('');
 
 	interface trackInfo {
-		track: any,
+		track: SpotifyApi.TrackObjectFull,
 		index: number,
 		playlist: SpotifyApi.SinglePlaylistResponse,
 		original: string
@@ -54,7 +58,7 @@ export default function OverviewPage() {
 	async function removeTracks(mode: ERemovalMode) {
 		if (!!dedupMax) return;
 		if (mode === ERemovalMode.Search) {
-			var query = prompt("Search by track or artist")?.toLowerCase();
+			var query: string = prompt("Search by track or artist")?.toLowerCase() || '';
 			if (!query) return;
 		}
 
@@ -69,14 +73,14 @@ export default function OverviewPage() {
 			const {body: plResponse} = (await spotify.getPlaylist(plIt.id, {market: country}));
 			plstsResponse.push(plResponse);
 			max += plResponse.tracks.total;
-			progress += plResponse.tracks.limit;
+			progress += Math.min(plResponse.tracks.limit, plResponse.tracks.total);
 		}
 		setDedupMax(max);
 		setDedupProgress(progress);
 
 		let trackList: trackInfo[] = [];
 		for (const plIt of plstsResponse) {
-			do {
+			while (plIt.tracks.offset + plIt.tracks.limit < plIt.tracks.total) {
 				plIt.tracks.offset += plIt.tracks.limit;
 				const {body: tracksResponse} = await spotify.getPlaylistTracks(plIt.id, {
 					market: country,
@@ -85,7 +89,7 @@ export default function OverviewPage() {
 				plIt.tracks.items = plIt.tracks.items.concat(tracksResponse.items);
 				progress += Math.min(plIt.tracks.total - plIt.tracks.offset, plIt.tracks.limit);
 				setDedupProgress(progress);
-			} while (plIt.tracks.offset + plIt.tracks.limit < plIt.tracks.total);
+			} 
 
 			for (let i = 0; i < plIt.tracks.items.length; i++) {
 				if (plIt.tracks.items[i].track.type === 'track') {
@@ -146,7 +150,7 @@ export default function OverviewPage() {
 		setDedupMax(0);
 	}
 
-	async function ConfirmRemoval() {
+	async function confirmRemoval() {
 		let trackList = deleteList
 			.filter((x) => x.playlist.owner.id === user || x.playlist.collaborative)
 			.filter((x) => !excludedTracks.includes(x));
@@ -167,6 +171,74 @@ export default function OverviewPage() {
 		}
 		setDeleteList([]);
 		openPopup(false);
+	}
+
+	async function createRandomPlaylist() {
+		if (rndProgress > 0 && rndProgress < rndProgressMax) return;
+		setRndProgress(0.0001);
+		forceUpdate();
+
+		let plstsResponse = [];
+		let max = 0;
+		let progress = 0;
+		for (const plIt of dedupPlaylists) {
+			const {body: plResponse} = (await spotify.getPlaylist(plIt.id, {market: country}));
+			plstsResponse.push(plResponse);
+			max += plResponse.tracks.total;
+			progress += Math.min(plResponse.tracks.limit, plResponse.tracks.total);
+		}
+		setRndProgress(progress/max);
+
+		let trackList: trackInfo[] = [];
+		for (const plIt of plstsResponse) {
+			while (plIt.tracks.offset + plIt.tracks.limit < plIt.tracks.total) {
+				plIt.tracks.offset += plIt.tracks.limit;
+				const {body: tracksResponse} = await spotify.getPlaylistTracks(plIt.id, {
+					market: country,
+					offset: plIt.tracks.offset
+				});
+				plIt.tracks.items = plIt.tracks.items.concat(tracksResponse.items);
+				const delta = plIt.tracks.total - plIt.tracks.offset;
+				progress += Math.min(delta > 0 ? delta : plIt.tracks.total, plIt.tracks.limit);
+				setRndProgress(progress/max);
+			}
+
+			for (let i = 0; i < plIt.tracks.items.length; i++) {
+				if (plIt.tracks.items[i].track.type === 'track') {
+					trackList.push({
+						track: plIt.tracks.items[i].track,
+						index: i,
+						playlist: plIt,
+						original: ''
+					});
+				}
+			}
+		}
+
+		let number = Math.min(trackList.length, randomPlaylistSize);
+
+		if (number >= 1) {
+			const dateUTC = new Date();
+			const date = new Date(dateUTC.getTime() - dateUTC.getTimezoneOffset()*60*1000);
+			const newPlaylist = (await spotify.createPlaylist('Random ' + date.toISOString().slice(0, -5), {public: false})).body;
+
+			if (newPlaylist) {
+				let batch: string[];
+				let counter = 0;
+				do {
+					batch = [];
+					do {
+						const index = Math.randomIntBetween(0, trackList.length - 1);
+						batch.push(trackList[index].track.uri);
+						trackList.splice(index, 1);
+					} while (++counter % 100 && counter < number);
+					await spotify.addTracksToPlaylist(newPlaylist.id, batch);
+					setRndProgress(counter / number + 1);
+				} while (counter < number);
+				setRndProgress(rndProgressMax);
+				forceUpdate();
+			}
+		}
 	}
 
 	function cleanDedupList() {
@@ -287,7 +359,7 @@ export default function OverviewPage() {
 		}
 	}
 
-	const entryTouchCancelHandler = function (e: any) {
+	const entryTouchCancelHandler = function () {
 		const clone = document.getElementById('touchedItem');
 		if (clone) document.body.removeChild(clone);
 	}
@@ -295,13 +367,14 @@ export default function OverviewPage() {
 
 	return (
 		<div className="page overview">
-			<img width="7%" src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_White.png"
+			<img width="110vw" src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_White.png"
 			     alt=""/>
+
 			<div className="playlist">
 				<Popup open={popup} setOpen={openPopup}>
 					<h1 style={{fontSize: "2rem"}}>Delete List (click for toggle)</h1>
 					<div>
-						<button className="button dark" style={{padding: "0.5rem"}} onClick={() => ConfirmRemoval()}>
+						<button className="button dark" style={{padding: "0.5rem"}} onClick={() => confirmRemoval()}>
 							Remove
 						</button>
 						<button className="button light" style={{padding: "0.5rem", marginLeft: "20px"}}
@@ -343,7 +416,7 @@ export default function OverviewPage() {
 									: {}}>
 									{x.track.name}</td>
 								<td className="artist">
-									{x.track.artists.map((y:any, j:number) =>
+									{x.track.artists.map((y: any, j: number) =>
 										<p key={x.track.id + i.toString() + y + j.toString()}>{y.name}</p>)
 									}
 								</td>
@@ -360,6 +433,37 @@ export default function OverviewPage() {
 					</table>
 				</Popup>
 			</div>
+
+			<Popup open={popupRandomPlst} setOpen={openPopupRandomPlst}>
+				<h1 style={{fontSize: "3rem"}}>Playlist of randomly selected tracks</h1>
+
+				<label>
+					<input
+						type="number"
+						min="1"
+						max="10000"
+						value={randomPlaylistSize}
+						onChange={(e) => setRandomPlaylistSize(Number(e.target.value))}
+					/>
+					<br/>
+					Size of playlist
+				</label>
+
+				<div>
+					<button className="button dark" style={{padding: "0.5rem"}} onClick={() => createRandomPlaylist()}>
+						Create
+					</button>
+					<button className="button light" style={{padding: "0.5rem", marginLeft: "20px"}}
+					        onClick={() => {
+								if (rndProgress === 0 || rndProgress === rndProgressMax)
+						            openPopupRandomPlst(false);
+					        }}>
+						Cancel
+					</button>
+				</div>
+
+				<div>{rndProgress >= rndProgressMax ? "DONE" : rndProgress > 0 && <progress max={rndProgressMax} value={rndProgress}/>}</div>
+			</Popup>
 
 			<div className="playlists">
 				{playlists.length === 0 && "Loading ... or you don't have any playlists"}
@@ -411,6 +515,9 @@ export default function OverviewPage() {
 				</button>
 				<button onClick={() => removeTracks(ERemovalMode.Unavailable)} className="button light save">
 					Remove unavailable tracks
+				</button>
+				<button onClick={() => {setRndProgress(0); openPopupRandomPlst(true)}} className="button light save">
+					Create RND plst
 				</button>
 				<button onClick={() => removeTracks(ERemovalMode.Search)} className="button light save">
 					Track search

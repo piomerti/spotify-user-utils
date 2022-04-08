@@ -1,5 +1,5 @@
 import "./Footer.scss";
-import KoFi from "./KoFi";
+// import KoFi from "./KoFi";
 
 export function Footer() {
 	return (
@@ -13,7 +13,10 @@ export function Footer() {
 
 				<li><a href="/">Made by ~Flam3rboy</a></li>
 				<li><a href="/">Extended by piomerti</a></li>
-				<li><KoFi color="#252525" id="G2G682RC3" label="Support Me" /></li>
+				{/*<li><KoFi color="#252525" id="G2G682RC3" label="Support Me" /></li>*/}
+				<li><a href="https://nowpayments.io/donation/piomerti" target="_blank" rel="noreferrer">
+					<img src="https://nowpayments.io/images/embeds/donation-button-black.svg" alt="Crypto donation"></img>
+				</a></li>
 			</ul>
 		</div>
 	);

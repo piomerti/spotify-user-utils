@@ -16,4 +16,13 @@
 		font-size: 0.8rem;
 		color: Gray;
 	}
+
+	@media only screen and (max-width : 1100px){
+		.bottomright {
+			position: relative;
+			bottom: 1%;
+			right: 1%;
+			left: 95%;
+		}
+	}
 }

@@ -51,6 +51,8 @@ body {
 			color: $sand;
 		}
 	}
+	margin: 0;
+	overscroll-behavior: none;
 }
 
 ::-webkit-scrollbar {
