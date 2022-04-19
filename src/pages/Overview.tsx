@@ -23,6 +23,7 @@ export default function OverviewPage() {
 	const [excludedTracks, setExcludedTracks] = useState<trackInfo[]>([]);
 	const [, forceUpdate] = useReducer(x => x + 1, 0);
 	const [randomPlaylistSize, setRandomPlaylistSize] = useState(1000);
+	const [trackListSample, setTrackListSample] = useState<string[]>([]);
 
 	var enterTarget: EventTarget | null = null;
 
@@ -119,8 +120,8 @@ export default function OverviewPage() {
 				trackList = trackList.filter((x) => !!x.original);
 				break;
 			case ERemovalMode.Unavailable:
-				str = 'unavailable';
-				//search for unavailables songs and leave only them
+				str = 'unplayable';
+				//search for unavailable songs and leave only them
 				trackList = trackList.filter((x) => x.track.is_playable === false);
 				break;
 			case ERemovalMode.Search:
@@ -178,41 +179,41 @@ export default function OverviewPage() {
 		setRndProgress(0.0001);
 		forceUpdate();
 
-		let plstsResponse = [];
-		let max = 0;
-		let progress = 0;
-		for (const plIt of dedupPlaylists) {
-			const {body: plResponse} = (await spotify.getPlaylist(plIt.id, {market: country}));
-			plstsResponse.push(plResponse);
-			max += plResponse.tracks.total;
-			progress += Math.min(plResponse.tracks.limit, plResponse.tracks.total);
-		}
-		setRndProgress(progress/max);
-
-		let trackList: trackInfo[] = [];
-		for (const plIt of plstsResponse) {
-			while (plIt.tracks.offset + plIt.tracks.limit < plIt.tracks.total) {
-				plIt.tracks.offset += plIt.tracks.limit;
-				const {body: tracksResponse} = await spotify.getPlaylistTracks(plIt.id, {
-					market: country,
-					offset: plIt.tracks.offset
-				});
-				plIt.tracks.items = plIt.tracks.items.concat(tracksResponse.items);
-				const delta = plIt.tracks.total - plIt.tracks.offset;
-				progress += Math.min(delta > 0 ? delta : plIt.tracks.total, plIt.tracks.limit);
-				setRndProgress(progress/max);
+		let trackList: string[] = [];
+		if (trackListSample.length) {
+			trackList = trackListSample;
+			setRndProgress(1);
+		} else {
+			let plstsResponse = [];
+			let max = 0;
+			let progress = 0;
+			for (const plIt of dedupPlaylists) {
+				const {body: plResponse} = (await spotify.getPlaylist(plIt.id, {market: country}));
+				plstsResponse.push(plResponse);
+				max += plResponse.tracks.total;
+				progress += Math.min(plResponse.tracks.limit, plResponse.tracks.total);
 			}
-
-			for (let i = 0; i < plIt.tracks.items.length; i++) {
-				if (plIt.tracks.items[i].track.type === 'track') {
-					trackList.push({
-						track: plIt.tracks.items[i].track,
-						index: i,
-						playlist: plIt,
-						original: ''
+			setRndProgress(progress/max);
+			for (const plIt of plstsResponse) {
+				while (plIt.tracks.offset + plIt.tracks.limit < plIt.tracks.total) {
+					plIt.tracks.offset += plIt.tracks.limit;
+					const {body: tracksResponse} = await spotify.getPlaylistTracks(plIt.id, {
+						market: country,
+						offset: plIt.tracks.offset
 					});
+					plIt.tracks.items = plIt.tracks.items.concat(tracksResponse.items);
+					const delta = plIt.tracks.total - plIt.tracks.offset;
+					progress += Math.min(delta > 0 ? delta : plIt.tracks.total, plIt.tracks.limit);
+					setRndProgress(progress / max);
+				}
+
+				for (let i = 0; i < plIt.tracks.items.length; i++) {
+					if (plIt.tracks.items[i].track.type === 'track') {
+						trackList.push(plIt.tracks.items[i].track.uri);
+					}
 				}
 			}
+			setTrackListSample(trackList);
 		}
 
 		let number = Math.min(trackList.length, randomPlaylistSize);
@@ -229,7 +230,7 @@ export default function OverviewPage() {
 					batch = [];
 					do {
 						const index = Math.randomIntBetween(0, trackList.length - 1);
-						batch.push(trackList[index].track.uri);
+						batch.push(trackList[index]);
 						trackList.splice(index, 1);
 					} while (++counter % 100 && counter < number);
 					await spotify.addTracksToPlaylist(newPlaylist.id, batch);
@@ -456,6 +457,7 @@ export default function OverviewPage() {
 					<button className="button light" style={{padding: "0.5rem", marginLeft: "20px"}}
 					        onClick={() => {
 								if (rndProgress === 0 || rndProgress === rndProgressMax)
+									setTrackListSample([]);
 						            openPopupRandomPlst(false);
 					        }}>
 						Cancel
@@ -504,7 +506,7 @@ export default function OverviewPage() {
 				))}
 				<h2 className="dedupText">
 					{dedupPlaylists.length < 10 &&
-						<div>Drag&Drop playlists here for removing unavailable or duplicate tracks</div>}
+						<div>Click on playlist or Drag&Drop HERE</div>}
 					{dedupPlaylists.length < 5 && <div>(tracks remain in the playlist earlier in the list)</div>}
 				</h2>
 			</div>
@@ -514,9 +516,9 @@ export default function OverviewPage() {
 					Remove duplicates
 				</button>
 				<button onClick={() => removeTracks(ERemovalMode.Unavailable)} className="button light save">
-					Remove unavailable tracks
+					Remove unplayable
 				</button>
-				<button onClick={() => {setRndProgress(0); openPopupRandomPlst(true)}} className="button light save">
+				<button onClick={() => {setTrackListSample([]); setRndProgress(0); openPopupRandomPlst(true)}} className="button light save">
 					Create RND plst
 				</button>
 				<button onClick={() => removeTracks(ERemovalMode.Search)} className="button light save">

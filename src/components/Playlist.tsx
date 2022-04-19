@@ -286,7 +286,7 @@ export default function Playlist({
 				trackList = trackList.filter((x) => !!x.original);
 				break;
 			case ERemovalMode.Unavailable:
-				str = ' unavailable ';
+				str = ' unplayable ';
 				//search for unavailables songs and leave only them
 				trackList = trackList.filter((x) => x.track.is_playable === false);
 				break;
@@ -513,7 +513,7 @@ export default function Playlist({
 							style={(playlist.owner.id === user.id || playlist.collaborative) ? {} : {display: 'none'}}
 							onClick={() => removeTracks(playlist, ERemovalMode.Unavailable)}
 							className="button light save">
-							Remove unavailable
+							Remove unplayable
 						</button>
 					</div>
 				</div>

@@ -34,13 +34,13 @@ export default function LandingPage() {
 				<h2>🎵 Features 🎵</h2>
 				<ul>
 					<li>Sort your playlists by genre and further divide them into separate playlists</li>
-					<li>Clean from duplicated and unavailable tracks</li>
+					<li>Сleans up duplicate and unplayable tracks</li>
 				</ul>
 				<br />
 				<h2>🙁 Known Limitations 🙁</h2>
 				<ul>
 					<li>Need to wait for the playlist to fully load</li>
-					<li>Unable to find unavailable local tracks because the Spotify Web API can't</li>
+					<li>Unable to find unplayable local tracks because the Spotify Web API can't</li>
 					<li>Track genres are taken from artist genres (via the Spotify and Last.fm APIs), so they are not always relevant</li>
 				</ul>
 			</div>
