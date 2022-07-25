@@ -257,8 +257,9 @@ export default function OverviewPage() {
 	}
 
 	function selectPlaylistHelper(id: string) {
-		selectPlaylist(id);
 		playlistRef.current = id;
+		selectPlaylist(id);
+
 	}
 
 	/*Drag & Drop*/

@@ -197,6 +197,7 @@ export default function Playlist({
 					if (curGenres.length && curGenres[0] !== null) {
 						if (onlyTopGenre) curGenres.length = 1;
 						for (let iter of curGenres) {
+							if (!iter) continue;
 							const words = genre.split(splitRE)
 								.filter(w => w !== '')
 								.unique();
@@ -249,6 +250,7 @@ export default function Playlist({
 		}
 		setCount(i);
 		setGenreList(listGenrePlaylists);
+		forceUpdate();
 	}
 
 	enum ERemovalMode {
