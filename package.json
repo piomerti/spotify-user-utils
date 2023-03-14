@@ -4,12 +4,12 @@
 	"private": true,
 	"homepage": ".",
 	"dependencies": {
-		"missing-native-js-functions": "^1.2.18",
+		"missing-native-js-functions": "^1.4.3",
 		"react": "^18.2.0",
 		"react-dom": "^18.2.0",
-		"react-router-dom": "^6.3.0",
+		"react-router-dom": "^6.9.0",
 		"react-scripts": "^5.0.1",
-		"sass": "^1.54.0",
+		"sass": "^1.59.2",
 		"spotify-web-api-node": "^5.0.2"
 	},
 	"scripts": {
@@ -37,8 +37,8 @@
 		]
 	},
 	"devDependencies": {
-		"@types/react": "^18.0.15",
-		"@types/react-dom": "^18.0.6",
+		"@types/react": "^18.0.28",
+		"@types/react-dom": "^18.0.11",
 		"@types/react-router-dom": "^5.3.3",
 		"@types/spotify-web-api-node": "^5.0.7",
 		"eslint-config-react-app": "^7.0.1"
